@@ -8,7 +8,15 @@ function formatTimestamp(ts: Horse['createdAt']) {
   return ts ? ts.toDate().toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—';
 }
 
-export function HorseDetail({ horse, onClose, onEdit }: { horse: Horse; onClose: () => void; onEdit: () => void }) {
+interface Props {
+  horse: Horse;
+  onClose: () => void;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  toggling: boolean;
+}
+
+export function HorseDetail({ horse, onClose, onEdit, onToggleStatus, toggling }: Props) {
   return (
     <Modal
       title={horse.name}
@@ -17,6 +25,9 @@ export function HorseDetail({ horse, onClose, onEdit }: { horse: Horse; onClose:
         <>
           <button type="button" className="btn btn--ghost" onClick={onClose}>
             Cerrar
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={onToggleStatus} disabled={toggling}>
+            {horse.status === 'in_progress' ? 'Marcar terminado' : 'Reabrir'}
           </button>
           <button type="button" className="btn btn--primary" onClick={onEdit}>
             Editar

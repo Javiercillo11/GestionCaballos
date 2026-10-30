@@ -50,6 +50,11 @@ async function login(p, email, password) {
   await p.getByRole('button', { name: 'Iniciar sesión' }).click();
 }
 
+async function rowAction(row, action, p = page) {
+  await row.getByRole('button', { name: /^Acciones de/ }).click();
+  await p.getByRole('menuitem', { name: action, exact: true }).click();
+}
+
 async function readDashboard() {
   await page.getByRole('link', { name: 'Resumen' }).click();
   await page.getByTestId('kpi-total').waitFor();
@@ -106,7 +111,7 @@ try {
   });
 
   await step('Editar servicio (descripción)', async () => {
-    await serviceRow(S3).getByRole('button', { name: 'Editar' }).click();
+    await rowAction(serviceRow(S3), 'Editar');
     await page.getByLabel('Descripción').fill('Descripción editada');
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await toast(`Servicio «${S3}» actualizado.`).waitFor();
@@ -168,11 +173,20 @@ try {
   });
 
   await step('Consultar ficha completa del caballo', async () => {
-    await horseRow(H1).getByRole('button', { name: 'Ver' }).click();
+    await horseRow(H1).locator('td').nth(1).click(); // pulsar en cualquier parte de la fila
     const dlg = page.getByRole('dialog');
     await dlg.getByText(`${tag} Cliente Ana`).waitFor();
     assert.match(euro(await dlg.innerText()), /65,55 €[\s\S]*415,65 €/);
     await dlg.getByRole('button', { name: 'Cerrar' }).first().click();
+  });
+
+  await step('Menú «⋮» muestra solo Editar y Eliminar; el clic en él no abre la vista', async () => {
+    await horseRow(H1).getByRole('button', { name: /^Acciones de/ }).click();
+    const items = await page.getByRole('menuitem').allInnerTexts();
+    assert.deepEqual(items, ['Editar', 'Eliminar']);
+    assert.equal(await page.getByRole('dialog').count(), 0);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.getByRole('menu').count(), 0);
   });
 
   await step('Buscar por caballo y por cliente', async () => {
@@ -188,8 +202,11 @@ try {
 
   await step('Marcar caballo como terminado y filtrar por estado', async () => {
     await horseRow(H1).getByText('En curso').waitFor();
-    await horseRow(H1).getByRole('button', { name: 'Marcar terminado' }).click();
+    await horseRow(H1).locator('td').nth(4).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Marcar terminado' }).click();
     await toast(`«${H1}» marcado como terminado.`).waitFor();
+    await page.getByRole('dialog').getByText('Terminado', { exact: true }).waitFor();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).first().click();
     await horseRow(H1).getByText('Terminado').waitFor();
     await page.getByRole('button', { name: /^En curso \(/ }).click();
     await page.getByText('Sin resultados').waitFor();
@@ -208,14 +225,16 @@ try {
   });
 
   await step('Reabrir caballo terminado lo devuelve a «En curso»', async () => {
-    await horseRow(H1).getByRole('button', { name: 'Reabrir' }).click();
+    await horseRow(H1).locator('td').first().click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Reabrir' }).click();
     await toast(`«${H1}» marcado como en curso.`).waitFor();
+    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).first().click();
     await horseRow(H1).getByText('En curso').waitFor();
   });
 
   await step('Cambiar precio del catálogo NO altera el importe histórico del caballo', async () => {
     await page.getByRole('link', { name: 'Servicios' }).click();
-    await serviceRow(S1).getByRole('button', { name: 'Editar' }).click();
+    await rowAction(serviceRow(S1), 'Editar');
     await page.getByLabel('Precio (€) *').fill('400');
     await page.getByText('El nuevo precio solo se aplicará a las próximas asignaciones').waitFor();
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
@@ -227,7 +246,7 @@ try {
   });
 
   await step('Editar caballo conserva precios históricos y añade/quita servicios', async () => {
-    await horseRow(H1).getByRole('button', { name: 'Editar' }).click();
+    await rowAction(horseRow(H1), 'Editar');
     const total = page.getByTestId('form-total');
     assert.equal(euro(await total.innerText()), '415,65 €');
     await page.getByText('Precio asignado conservado').waitFor();
@@ -246,7 +265,7 @@ try {
 
   await step('Renombrar servicio mantiene la relación por id (sigue contando 1 caballo)', async () => {
     await page.getByRole('link', { name: 'Servicios' }).click();
-    await serviceRow(S2).getByRole('button', { name: 'Editar' }).click();
+    await rowAction(serviceRow(S2), 'Editar');
     await page.getByLabel('Nombre del servicio *').fill(`${S2} renombrado`);
     await page.getByRole('button', { name: 'Guardar cambios' }).click();
     await toast('actualizado').waitFor();
@@ -255,7 +274,7 @@ try {
   });
 
   await step('No se puede eliminar un servicio asignado (se ofrece desactivar)', async () => {
-    await serviceRow(S1).getByRole('button', { name: 'Eliminar' }).click();
+    await rowAction(serviceRow(S1), 'Eliminar');
     await page.getByRole('heading', { name: 'No se puede eliminar' }).waitFor();
     await page.getByText(/asignado a 1 caballo/).waitFor();
     await page.getByRole('button', { name: 'Desactivar servicio' }).click();
@@ -303,7 +322,7 @@ try {
     assert.ok(overflow <= 1, `scroll horizontal de ${overflow}px`);
     assert.equal(await mp.locator('thead').isVisible(), false);
     await mp.screenshot({ path: `${OUT}/mobile-caballos.png`, fullPage: true });
-    await mp.locator('tbody tr').filter({ hasText: H1 }).getByRole('button', { name: 'Editar' }).click();
+    await rowAction(mp.locator('tbody tr').filter({ hasText: H1 }), 'Editar', mp);
     await mp.getByRole('dialog').waitFor();
     const formOverflow = await mp.evaluate(() => document.querySelector('.modal').getBoundingClientRect().right - document.documentElement.clientWidth);
     assert.ok(formOverflow <= 1, `formulario con scroll horizontal de ${formOverflow}px`);
@@ -312,7 +331,7 @@ try {
   });
 
   await step('Eliminar caballo con confirmación', async () => {
-    await horseRow(H1).getByRole('button', { name: 'Eliminar' }).click();
+    await rowAction(horseRow(H1), 'Eliminar');
     await page.getByRole('dialog').getByText('¿Seguro que quieres eliminar').waitFor();
     await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click();
     await toast(`Caballo «${H1}» eliminado.`).waitFor();
@@ -322,7 +341,7 @@ try {
   await step('Servicios sin uso sí se pueden eliminar (limpieza)', async () => {
     await page.getByRole('link', { name: 'Servicios' }).click();
     for (const name of [S1, `${S2} renombrado`, S3]) {
-      await serviceRow(name).getByRole('button', { name: 'Eliminar' }).click();
+      await rowAction(serviceRow(name), 'Eliminar');
       await page.getByRole('dialog').getByRole('button', { name: 'Eliminar' }).click();
       await toast(`Servicio «${name}» eliminado.`).waitFor();
     }

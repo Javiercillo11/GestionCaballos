@@ -2,7 +2,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
-import { EmptyState, ErrorState, IconButton, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
+import { RowMenu } from '../components/RowMenu';
+import { EmptyState, ErrorState, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { assertOnline, errorMessage } from '../lib/errors';
 import { formatCents } from '../lib/money';
@@ -22,7 +23,7 @@ export function ServicesPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<Filter>('all');
   const [editing, setEditing] = useState<Service | 'new' | null>(null);
-  const [viewing, setViewing] = useState<Service | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<Service | null>(null);
   const [blocked, setBlocked] = useState<{ service: Service; message: string } | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export function ServicesPage() {
 
   const getValue = useCallback(sortValue, []);
   const table = useTable<Service, SortKey>(filtered, getValue, 'name');
+  const viewing = viewingId ? services.items.find((s) => s.id === viewingId) ?? null : null;
 
   async function toggleStatus(s: Service) {
     if (togglingId) return;
@@ -171,11 +173,21 @@ export function ServicesPage() {
                 </thead>
                 <tbody>
                   {table.pageRows.map((s) => (
-                    <tr key={s.id} className={s.status === 'inactive' ? 'is-inactive' : undefined}>
+                    <tr
+                      key={s.id}
+                      className={`row-link ${s.status === 'inactive' ? 'is-inactive' : ''}`}
+                      tabIndex={0}
+                      aria-label={`Ver ${s.name}`}
+                      onClick={() => setViewingId(s.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewingId(s.id);
+                        }
+                      }}
+                    >
                       <td data-label="Servicio" className="cell-strong">
-                        <button type="button" className="link-btn link-btn--inline" onClick={() => setViewing(s)}>
-                          {s.name}
-                        </button>
+                        {s.name}
                       </td>
                       <td data-label="Descripción" className="cell-desc">
                         {s.description || <span className="muted">—</span>}
@@ -190,17 +202,13 @@ export function ServicesPage() {
                         <StatusBadge status={s.status} />
                       </td>
                       <td data-label="Acciones" className="actions-col">
-                        <div className="row-actions">
-                          <IconButton icon="edit" label="Editar" onClick={() => setEditing(s)} />
-                          <IconButton
-                            icon="power"
-                            label={s.status === 'active' ? 'Desactivar' : 'Activar'}
-                            variant={s.status === 'active' ? 'on' : undefined}
-                            onClick={() => toggleStatus(s)}
-                            disabled={togglingId === s.id}
-                          />
-                          <IconButton icon="trash" label="Eliminar" variant="danger" onClick={() => requestDelete(s)} />
-                        </div>
+                        <RowMenu
+                          label={`Acciones de ${s.name}`}
+                          items={[
+                            { label: 'Editar', onSelect: () => setEditing(s) },
+                            { label: 'Eliminar', onSelect: () => requestDelete(s), danger: true },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -222,18 +230,26 @@ export function ServicesPage() {
       {viewing && (
         <Modal
           title={viewing.name}
-          onClose={() => setViewing(null)}
+          onClose={() => setViewingId(null)}
           footer={
             <>
-              <button type="button" className="btn btn--ghost" onClick={() => setViewing(null)}>
+              <button type="button" className="btn btn--ghost" onClick={() => setViewingId(null)}>
                 Cerrar
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => toggleStatus(viewing)}
+                disabled={togglingId === viewing.id}
+              >
+                {viewing.status === 'active' ? 'Desactivar' : 'Activar'}
               </button>
               <button
                 type="button"
                 className="btn btn--primary"
                 onClick={() => {
                   setEditing(viewing);
-                  setViewing(null);
+                  setViewingId(null);
                 }}
               >
                 Editar

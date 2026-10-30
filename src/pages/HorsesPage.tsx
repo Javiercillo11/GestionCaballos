@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
-import { EmptyState, ErrorState, HorseStatusBadge, IconButton, Pagination, SortHeader, Spinner } from '../components/ui';
+import { RowMenu } from '../components/RowMenu';
+import { EmptyState, ErrorState, HorseStatusBadge, Pagination, SortHeader, Spinner } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { formatDate } from '../lib/dates';
 import { assertOnline, errorMessage } from '../lib/errors';
@@ -161,11 +162,21 @@ export function HorsesPage() {
                 </thead>
                 <tbody>
                   {table.pageRows.map((h) => (
-                    <tr key={h.id} className={h.status === 'finished' ? 'is-finished' : undefined}>
+                    <tr
+                      key={h.id}
+                      className={`row-link ${h.status === 'finished' ? 'is-finished' : ''}`}
+                      tabIndex={0}
+                      aria-label={`Ver ${h.name}`}
+                      onClick={() => setViewingId(h.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setViewingId(h.id);
+                        }
+                      }}
+                    >
                       <td data-label="Caballo" className="cell-strong">
-                        <button type="button" className="link-btn link-btn--inline" onClick={() => setViewingId(h.id)}>
-                          {h.name}
-                        </button>
+                        {h.name}
                       </td>
                       <td data-label="Cliente">{h.clientName}</td>
                       <td data-label="Servicios">
@@ -190,18 +201,13 @@ export function HorsesPage() {
                         <HorseStatusBadge status={h.status} />
                       </td>
                       <td data-label="Acciones" className="actions-col">
-                        <div className="row-actions">
-                          <IconButton icon="view" label="Ver" onClick={() => setViewingId(h.id)} />
-                          <IconButton icon="edit" label="Editar" onClick={() => setEditing(h)} />
-                          <IconButton
-                            icon={h.status === 'in_progress' ? 'check' : 'reopen'}
-                            label={h.status === 'in_progress' ? 'Marcar terminado' : 'Reabrir'}
-                            variant={h.status === 'in_progress' ? 'on' : undefined}
-                            onClick={() => toggleStatus(h)}
-                            disabled={togglingId === h.id}
-                          />
-                          <IconButton icon="trash" label="Eliminar" variant="danger" onClick={() => setDeleting(h)} />
-                        </div>
+                        <RowMenu
+                          label={`Acciones de ${h.name}`}
+                          items={[
+                            { label: 'Editar', onSelect: () => setEditing(h) },
+                            { label: 'Eliminar', onSelect: () => setDeleting(h), danger: true },
+                          ]}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -224,6 +230,8 @@ export function HorsesPage() {
         <HorseDetail
           horse={viewing}
           onClose={() => setViewingId(null)}
+          onToggleStatus={() => toggleStatus(viewing)}
+          toggling={togglingId === viewing.id}
           onEdit={() => {
             setViewingId(null);
             setEditing(viewing);
