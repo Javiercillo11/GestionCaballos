@@ -1,0 +1,261 @@
+import { useCallback, useMemo, useState } from 'react';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import { useToast } from '../components/Toast';
+import { EmptyState, ErrorState, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
+import { useData } from '../context/DataContext';
+import { formatDate } from '../lib/dates';
+import { assertOnline, errorMessage } from '../lib/errors';
+import { formatCents } from '../lib/money';
+import type { Horse, Status } from '../lib/types';
+import { normalize, PAGE_SIZE, useTable } from '../lib/useTable';
+import { deleteHorse, setHorseStatus } from '../services/horses';
+import { HorseDetail } from './HorseDetail';
+import { HorseForm } from './HorseForm';
+
+type SortKey = 'name' | 'clientName' | 'totalPrice' | 'location' | 'registrationDate' | 'status';
+type Filter = 'all' | Status;
+
+const sortValue = (h: Horse, key: SortKey): string | number => h[key];
+
+export function HorsesPage() {
+  const { horses } = useData();
+  const toast = useToast();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<Filter>('all');
+  const [editing, setEditing] = useState<Horse | 'new' | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Horse | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    const active = horses.items.filter((h) => h.status === 'active').length;
+    return { all: horses.items.length, active, inactive: horses.items.length - active };
+  }, [horses.items]);
+
+  const filtered = useMemo(() => {
+    const q = normalize(search.trim());
+    return horses.items.filter(
+      (h) =>
+        (filter === 'all' || h.status === filter) &&
+        (!q || normalize(h.name).includes(q) || normalize(h.clientName).includes(q)),
+    );
+  }, [horses.items, search, filter]);
+
+  const getValue = useCallback(sortValue, []);
+  const table = useTable<Horse, SortKey>(filtered, getValue, 'name');
+  const viewing = viewingId ? horses.items.find((h) => h.id === viewingId) ?? null : null;
+
+  async function toggleStatus(h: Horse) {
+    if (togglingId) return;
+    const next: Status = h.status === 'active' ? 'inactive' : 'active';
+    setTogglingId(h.id);
+    try {
+      assertOnline();
+      await setHorseStatus(h.id, next);
+      toast('success', `«${h.name}» ahora está ${next === 'active' ? 'activo' : 'inactivo'}.`);
+    } catch (err) {
+      toast('error', errorMessage(err, 'No se ha podido cambiar el estado.'));
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return;
+    try {
+      assertOnline();
+      await deleteHorse(deleting.id);
+      toast('success', `Caballo «${deleting.name}» eliminado.`);
+      setDeleting(null);
+    } catch (err) {
+      toast('error', errorMessage(err, 'No se ha podido eliminar el caballo.'));
+    }
+  }
+
+  function changeFilter(f: Filter) {
+    setFilter(f);
+    table.setPage(1);
+  }
+
+  return (
+    <section className="page">
+      <header className="page__header">
+        <div>
+          <h1>Caballos</h1>
+          <p className="page__subtitle">
+            {counts.all} registrados · {counts.active} activos · {counts.inactive} inactivos
+          </p>
+        </div>
+        <button type="button" className="btn btn--primary" onClick={() => setEditing('new')}>
+          + Nuevo caballo
+        </button>
+      </header>
+
+      <div className="toolbar">
+        <input
+          type="search"
+          className="toolbar__search"
+          placeholder="Buscar por caballo o cliente…"
+          aria-label="Buscar por nombre del caballo o del cliente"
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            table.setPage(1);
+          }}
+        />
+        <div className="segmented" role="group" aria-label="Filtrar por estado">
+          {(
+            [
+              ['all', `Todos (${counts.all})`],
+              ['active', `Activos (${counts.active})`],
+              ['inactive', `Inactivos (${counts.inactive})`],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              className={`segmented__opt ${filter === value ? 'is-on' : ''}`}
+              aria-pressed={filter === value}
+              onClick={() => changeFilter(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="card">
+        {horses.loading ? (
+          <Spinner label="Cargando caballos…" />
+        ) : horses.error ? (
+          <ErrorState message={horses.error} />
+        ) : horses.items.length === 0 ? (
+          <EmptyState
+            title="Todavía no hay caballos registrados"
+            text="Da de alta el primer caballo para empezar a gestionar sus servicios."
+            action={
+              <button type="button" className="btn btn--primary" onClick={() => setEditing('new')}>
+                + Nuevo caballo
+              </button>
+            }
+          />
+        ) : filtered.length === 0 ? (
+          <EmptyState title="Sin resultados" text="Ningún caballo coincide con la búsqueda o el filtro aplicado." />
+        ) : (
+          <>
+            <div className="table-wrap">
+              <table className="table table--responsive">
+                <thead>
+                  <tr>
+                    <SortHeader label="Caballo" field="name" {...table} />
+                    <SortHeader label="Cliente" field="clientName" {...table} />
+                    <th scope="col">Servicios</th>
+                    <SortHeader label="Precio total" field="totalPrice" align="right" {...table} />
+                    <SortHeader label="Ubicación" field="location" {...table} />
+                    <SortHeader label="Fecha de alta" field="registrationDate" {...table} />
+                    <SortHeader label="Estado" field="status" {...table} />
+                    <th scope="col" className="actions-col">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {table.pageRows.map((h) => (
+                    <tr key={h.id} className={h.status === 'inactive' ? 'is-inactive' : undefined}>
+                      <td data-label="Caballo" className="cell-strong">
+                        <button type="button" className="link-btn link-btn--inline" onClick={() => setViewingId(h.id)}>
+                          {h.name}
+                        </button>
+                      </td>
+                      <td data-label="Cliente">{h.clientName}</td>
+                      <td data-label="Servicios">
+                        {h.services.length === 0 ? (
+                          <span className="muted">—</span>
+                        ) : (
+                          <ul className="chips">
+                            {h.services.map((s) => (
+                              <li key={s.serviceId} className="chip" title={formatCents(s.price)}>
+                                {s.name}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </td>
+                      <td data-label="Precio total" className="num cell-strong">
+                        {formatCents(h.totalPrice)}
+                      </td>
+                      <td data-label="Ubicación">{h.location || <span className="muted">—</span>}</td>
+                      <td data-label="Fecha de alta">{formatDate(h.registrationDate)}</td>
+                      <td data-label="Estado">
+                        <StatusBadge status={h.status} />
+                      </td>
+                      <td data-label="Acciones" className="actions-col">
+                        <div className="row-actions">
+                          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setViewingId(h.id)}>
+                            Ver
+                          </button>
+                          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setEditing(h)}>
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => toggleStatus(h)}
+                            disabled={togglingId === h.id}
+                          >
+                            {h.status === 'active' ? 'Desactivar' : 'Activar'}
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn--ghost btn--sm btn--danger-text"
+                            onClick={() => setDeleting(h)}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Pagination
+              page={table.page}
+              pageCount={table.pageCount}
+              total={table.total}
+              pageSize={PAGE_SIZE}
+              onPage={table.setPage}
+            />
+          </>
+        )}
+      </div>
+
+      {editing && <HorseForm horse={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+      {viewing && (
+        <HorseDetail
+          horse={viewing}
+          onClose={() => setViewingId(null)}
+          onEdit={() => {
+            setViewingId(null);
+            setEditing(viewing);
+          }}
+        />
+      )}
+      {deleting && (
+        <ConfirmDialog
+          title="Eliminar caballo"
+          message={
+            <>
+              ¿Seguro que quieres eliminar a <strong>{deleting.name}</strong> (cliente {deleting.clientName})? Esta
+              acción no se puede deshacer.
+            </>
+          }
+          confirmLabel="Eliminar"
+          danger
+          onConfirm={confirmDelete}
+          onClose={() => setDeleting(null)}
+        />
+      )}
+    </section>
+  );
+}

@@ -1,0 +1,39 @@
+:root {
+  /* Paleta propia: verde bosque + neutros cálidos (cuero / arena) */
+  --c-bg: #f5f2ec;
+  --c-surface: #ffffff;
+  --c-surface-2: #faf8f4;
+  --c-border: #e3ddd2;
+  --c-border-strong: #cfc6b6;
+  --c-text: #1d211f;
+  --c-text-2: #5b615d;
+  --c-text-3: #8a8f8b;
+
+  --c-primary: #1f3a2e;
+  --c-primary-hover: #2a4d3d;
+  --c-primary-soft: #e4ece7;
+  --c-accent: #b7793c;
+  --c-accent-soft: #f6ebdd;
+
+  --c-success: #2f7a4f;
+  --c-success-soft: #e3f2e8;
+  --c-danger: #b23a2f;
+  --c-danger-soft: #fbe9e6;
+  --c-warn: #8a6100;
+  --c-warn-soft: #fdf3d6;
+  --c-info: #2b5a85;
+  --c-info-soft: #e6eff8;
+  --c-muted-soft: #eeebe5;
+
+  --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --sh-1: 0 1px 2px rgba(29, 33, 31, 0.06);
+  --sh-2: 0 8px 28px rgba(29, 33, 31, 0.14);
+
+  --sidebar-w: 232px;
+}
