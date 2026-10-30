@@ -9,8 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -b --noEmit",
-    "e2e": "node e2e/app.e2e.mjs",
-    "rules:check": "node e2e/rules-check.mjs",
+    "e2e": "node --env-file-if-exists=.env.e2e e2e/app.e2e.mjs",
+    "rules:check": "node --env-file-if-exists=.env.e2e e2e/rules-check.mjs",
     "deploy:rules": "npx firebase-tools deploy --only firestore:rules,firestore:indexes"
   },
   "dependencies": {

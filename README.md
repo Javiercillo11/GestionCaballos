@@ -113,7 +113,7 @@ npm run preview    # sirve dist/ en http://localhost:4173/GestionCaballos/
 
 ## Pruebas contra Firebase real
 
-Con un usuario de prueba incluido en `allowedUsers`:
+Con un usuario de prueba incluido en `allowedUsers` (las credenciales pueden ir en `.env.e2e`, excluido de git, con `E2E_EMAIL=` y `E2E_PASSWORD=`):
 
 ```bash
 # Reglas de seguridad desplegadas (sin autenticar, cuenta no autorizada, validación de esquema)
