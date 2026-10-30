@@ -296,6 +296,25 @@ try {
       return w.scrollWidth - w.clientWidth;
     });
     assert.ok(clipped <= 1, `tabla desborda ${clipped}px`);
+    // Cada cabecera alineada con los datos de su columna (izquierda, derecha o centro)
+    const misaligned = await page.evaluate(() => {
+      const bad = [];
+      for (const t of document.querySelectorAll('table.table')) {
+        const ths = [...t.querySelectorAll('thead th')];
+        for (const tr of t.querySelectorAll('tbody tr')) {
+          ths.forEach((th, i) => {
+            const td = tr.children[i];
+            const box = (el) => { const r = document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect(); };
+            const h = box(th), d = box(td);
+            const align = getComputedStyle(td).textAlign;
+            const diff = align === 'right' ? h.right - d.right : align === 'center' ? (h.left + h.right - d.left - d.right) / 2 : h.left - d.left;
+            if (Math.abs(diff) > 2) bad.push(`${th.innerText.split('\n')[0]}: ${Math.round(diff)}px`);
+          });
+        }
+      }
+      return bad;
+    });
+    assert.deepEqual(misaligned, [], `columnas desalineadas: ${misaligned.join(', ')}`);
     await page.screenshot({ path: `${OUT}/desktop-caballos.png`, fullPage: true });
     await readDashboard();
     await page.screenshot({ path: `${OUT}/desktop-resumen.png`, fullPage: true });

@@ -184,6 +184,9 @@ fieldset.field legend { padding: 0; margin-bottom: 8px; }
   font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--c-text-2);
   padding: 10px 12px; border-bottom: 1px solid var(--c-border); white-space: nowrap;
 }
+/* Cabecera alineada igual que sus datos: cifras a la derecha, acciones centradas */
+.table th.num, .table td.num { text-align: right; }
+.table th.actions-col, .table td.actions-col { text-align: center; }
 .table td { padding: 10px 12px; border-bottom: 1px solid var(--c-border); vertical-align: middle; overflow-wrap: anywhere; }
 .table td.num, .table td[data-label='Estado'], .table td[data-label='Fecha de alta'] { overflow-wrap: normal; white-space: nowrap; }
 .table tbody tr:last-child td { border-bottom: 0; }
@@ -200,7 +203,6 @@ fieldset.field legend { padding: 0; margin-bottom: 8px; }
 .sort-btn__icon { font-size: 10px; opacity: .45; }
 .sort-btn.is-active { color: var(--c-primary); }
 .sort-btn.is-active .sort-btn__icon { opacity: 1; }
-th.num .sort-btn { flex-direction: row; }
 .row-link { cursor: pointer; }
 .row-link:focus-visible { outline: 2px solid var(--c-accent); outline-offset: -2px; }
 .kebab {
