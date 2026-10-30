@@ -45,8 +45,9 @@ export function Layout() {
         </nav>
         <div className="sidebar__footer">
           <p className="sidebar__user" title={email ?? ''}>{email}</p>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => void logout()}>
-            Cerrar sesión
+          <button type="button" className="btn btn--ghost btn--sm logout-btn" onClick={() => void logout()} aria-label="Cerrar sesión" title="Cerrar sesión">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" /></svg>
+            <span className="logout-btn__text">Cerrar sesión</span>
           </button>
         </div>
       </aside>

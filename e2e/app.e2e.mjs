@@ -218,7 +218,8 @@ try {
 
   await step('No se puede eliminar un servicio asignado (se ofrece desactivar)', async () => {
     await serviceRow(S1).getByRole('button', { name: 'Eliminar' }).click();
-    await page.getByRole('dialog').getByText('No se puede eliminar').waitFor();
+    await page.getByRole('heading', { name: 'No se puede eliminar' }).waitFor();
+    await page.getByText(/asignado a 1 caballo/).waitFor();
     await page.getByRole('button', { name: 'Desactivar servicio' }).click();
     await serviceRow(S1).getByText('Inactivo').waitFor();
   });
@@ -232,8 +233,16 @@ try {
     await horseRow(H1).getByText(S1).waitFor();
   });
 
-  await step('Vista móvil (390×844): tabla en tarjetas y navegación visible', async () => {
+  await step('Escritorio (1280×720): la tabla cabe sin cortar columnas', async () => {
+    const clipped = await page.evaluate(() => {
+      const w = document.querySelector('.table-wrap');
+      return w.scrollWidth - w.clientWidth;
+    });
+    assert.ok(clipped <= 1, `tabla desborda ${clipped}px`);
     await page.screenshot({ path: `${OUT}/desktop-caballos.png`, fullPage: true });
+  });
+
+  await step('Vista móvil (390×844): tabla en tarjetas y navegación visible', async () => {
     const m = await browser.newContext({ ...devices['iPhone 13'], locale: 'es-ES' });
     const mp = await m.newPage();
     await mp.goto(`${URL}#/caballos`);
@@ -241,11 +250,14 @@ try {
     await mp.getByRole('heading', { name: 'Caballos' }).waitFor();
     await mp.getByPlaceholder('Buscar por caballo o cliente…').fill(tag);
     await mp.locator('tbody tr').filter({ hasText: H1 }).waitFor();
-    const overflow = await mp.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    const overflow = await mp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(overflow <= 1, `scroll horizontal de ${overflow}px`);
     assert.equal(await mp.locator('thead').isVisible(), false);
     await mp.screenshot({ path: `${OUT}/mobile-caballos.png`, fullPage: true });
     await mp.locator('tbody tr').filter({ hasText: H1 }).getByRole('button', { name: 'Editar' }).click();
+    await mp.getByRole('dialog').waitFor();
+    const formOverflow = await mp.evaluate(() => document.querySelector('.modal').getBoundingClientRect().right - document.documentElement.clientWidth);
+    assert.ok(formOverflow <= 1, `formulario con scroll horizontal de ${formOverflow}px`);
     await mp.screenshot({ path: `${OUT}/mobile-form.png` });
     await m.close();
   });

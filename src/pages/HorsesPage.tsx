@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
-import { EmptyState, ErrorState, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
+import { EmptyState, ErrorState, IconButton, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { formatDate } from '../lib/dates';
 import { assertOnline, errorMessage } from '../lib/errors';
@@ -191,27 +191,16 @@ export function HorsesPage() {
                       </td>
                       <td data-label="Acciones" className="actions-col">
                         <div className="row-actions">
-                          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setViewingId(h.id)}>
-                            Ver
-                          </button>
-                          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setEditing(h)}>
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
+                          <IconButton icon="view" label="Ver" onClick={() => setViewingId(h.id)} />
+                          <IconButton icon="edit" label="Editar" onClick={() => setEditing(h)} />
+                          <IconButton
+                            icon="power"
+                            label={h.status === 'active' ? 'Desactivar' : 'Activar'}
+                            variant={h.status === 'active' ? 'on' : undefined}
                             onClick={() => toggleStatus(h)}
                             disabled={togglingId === h.id}
-                          >
-                            {h.status === 'active' ? 'Desactivar' : 'Activar'}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm btn--danger-text"
-                            onClick={() => setDeleting(h)}
-                          >
-                            Eliminar
-                          </button>
+                          />
+                          <IconButton icon="trash" label="Eliminar" variant="danger" onClick={() => setDeleting(h)} />
                         </div>
                       </td>
                     </tr>

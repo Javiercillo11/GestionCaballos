@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import { useToast } from '../components/Toast';
-import { EmptyState, ErrorState, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
+import { EmptyState, ErrorState, IconButton, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { assertOnline, errorMessage } from '../lib/errors';
 import { formatCents } from '../lib/money';
@@ -191,24 +191,15 @@ export function ServicesPage() {
                       </td>
                       <td data-label="Acciones" className="actions-col">
                         <div className="row-actions">
-                          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setEditing(s)}>
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm"
+                          <IconButton icon="edit" label="Editar" onClick={() => setEditing(s)} />
+                          <IconButton
+                            icon="power"
+                            label={s.status === 'active' ? 'Desactivar' : 'Activar'}
+                            variant={s.status === 'active' ? 'on' : undefined}
                             onClick={() => toggleStatus(s)}
                             disabled={togglingId === s.id}
-                          >
-                            {s.status === 'active' ? 'Desactivar' : 'Activar'}
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn--ghost btn--sm btn--danger-text"
-                            onClick={() => requestDelete(s)}
-                          >
-                            Eliminar
-                          </button>
+                          />
+                          <IconButton icon="trash" label="Eliminar" variant="danger" onClick={() => requestDelete(s)} />
                         </div>
                       </td>
                     </tr>
