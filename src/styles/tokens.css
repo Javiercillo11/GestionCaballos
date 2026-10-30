@@ -25,6 +25,10 @@
   --c-info-soft: #e6eff8;
   --c-muted-soft: #eeebe5;
 
+  /* Resumen: ganado / por ganar (validado con dataviz validate_palette) */
+  --c-earned: #2f7a4f;
+  --c-pending: #c98a4b;
+
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-num: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 

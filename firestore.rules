@@ -67,6 +67,11 @@ service cloud.firestore {
     }
 
     // ---------- Caballos ----------
+    // Estado del trabajo: en curso (pendiente de cobro) o terminado (ganado).
+    function isHorseStatus(v) {
+      return v == 'in_progress' || v == 'finished';
+    }
+
     function isValidHorse(d) {
       return d.keys().hasOnly(['name', 'clientName', 'services', 'serviceIds', 'totalPrice', 'location',
                                'registrationDate', 'status', 'createdAt', 'updatedAt'])
@@ -79,7 +84,7 @@ service cloud.firestore {
         && d.serviceIds is list && d.serviceIds.size() == d.services.size()
         && isCents(d.totalPrice, 500000000)
         && d.registrationDate is string && d.registrationDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-        && isStatus(d.status)
+        && isHorseStatus(d.status)
         && d.createdAt is timestamp
         && d.updatedAt is timestamp
         // Sin servicios el total debe ser 0; con un servicio, debe coincidir con su precio.

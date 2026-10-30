@@ -152,6 +152,28 @@ fieldset.field legend { padding: 0; margin-bottom: 8px; }
 .page__subtitle { margin: 4px 0 0; color: var(--c-text-2); font-size: 14px; }
 .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
 .toolbar__search { flex: 1 1 260px; max-width: 420px; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.kpi { padding: 18px 20px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+.kpi__label { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--c-text-2); }
+.kpi__value { margin: 6px 0 2px; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--c-text); }
+.kpi__meta { margin: 0; font-size: 13px; color: var(--c-text-3); }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.swatch--earned { background: var(--c-earned); }
+.swatch--pending { background: var(--c-pending); }
+.card--pad { padding: 18px 20px; margin-bottom: 14px; }
+.card__title { padding: 16px 14px 10px; margin: 0; }
+.split__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.split__head .section-title { margin: 0; }
+.split__head p { margin: 0; font-size: 13px; }
+.split { display: flex; gap: 2px; height: 14px; }
+.split__seg { min-width: 4px; border-radius: 4px; }
+.split__seg--earned { background: var(--c-earned); }
+.split__seg--pending { background: var(--c-pending); }
+.legend { list-style: none; margin: 12px 0 0; padding: 0; display: flex; gap: 8px 24px; flex-wrap: wrap; font-size: 14px; color: var(--c-text-2); }
+.legend li { display: flex; align-items: center; gap: 8px; }
+.legend strong { color: var(--c-text); font-variant-numeric: tabular-nums; }
+.table tfoot th, .table tfoot td { padding: 10px 12px; border-top: 1px solid var(--c-border-strong); background: var(--c-surface-2); font-weight: 700; text-align: left; }
+.table tfoot td.num { text-align: right; }
 .card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); box-shadow: var(--sh-1); overflow: hidden; }
 
 /* ---------- Tablas ---------- */
@@ -201,6 +223,8 @@ th.num .sort-btn { flex-direction: row; }
 .badge__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .badge--active { background: var(--c-success-soft); color: var(--c-success); }
 .badge--inactive { background: var(--c-muted-soft); color: var(--c-text-3); }
+.badge--progress { background: var(--c-accent-soft); color: #7a4c1f; }
+.badge--finished { background: var(--c-success-soft); color: var(--c-success); }
 
 .pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--c-border); font-size: 13px; color: var(--c-text-2); }
 .pagination__controls { display: flex; align-items: center; gap: 8px; }
@@ -270,13 +294,25 @@ th.num .sort-btn { flex-direction: row; }
 @media (max-width: 760px) {
   .logout-btn { padding: 0 8px; }
   .logout-btn__text { display: none; }
+}
+
+@media (max-width: 480px) {
+  .nav { flex: 1; justify-content: space-around; }
+  .nav__link { flex-direction: column; gap: 2px; padding: 4px 10px; font-size: 12px; }
+  .nav__link svg { width: 18px; height: 18px; }
   .form-grid { grid-template-columns: minmax(0, 1fr); }
   .toolbar__search { max-width: none; }
   .page__header h1 { font-size: 22px; }
   .page__header .btn { flex: 1 0 auto; }
 
   /* La tabla se convierte en tarjetas apiladas */
+  .kpis { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .kpi__value { font-size: 26px; }
   .table--responsive thead { display: none; }
+  .table--responsive tfoot, .table--responsive tfoot tr { display: block; }
+  .table--responsive tfoot th { display: block; border: 0; padding: 0 0 4px; }
+  .table--responsive tfoot td, .table--responsive tfoot td.num { border: 0; background: none; text-align: left; padding: 4px 0; }
+  .table--responsive tfoot tr { padding: 12px 14px; background: var(--c-surface-2); border-top: 1px solid var(--c-border-strong); }
   .table--responsive, .table--responsive tbody, .table--responsive tr, .table--responsive td { display: block; width: 100%; }
   .table--responsive tr { padding: 12px 14px; border-bottom: 1px solid var(--c-border); }
   .table--responsive tbody tr:last-child { border-bottom: 0; }

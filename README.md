@@ -10,7 +10,8 @@ Aplicación web para gestionar caballos, sus clientes, los servicios contratados
 
 - Login con email y contraseña, mensajes de error en español, recuperación de contraseña, sesión persistente y cierre de sesión.
 - Acceso restringido a una **lista de usuarios autorizados** (`allowedUsers`): una cuenta de Firebase cualquiera no puede ver ni modificar datos.
-- **Caballos:** tabla con búsqueda (caballo o cliente, sin distinguir tildes/mayúsculas), filtro Activo/Inactivo, ordenación por columnas, paginación (15 por página), ficha completa, alta/edición, activar/desactivar y eliminación con confirmación.
+- **Resumen (pantalla inicial):** total de caballos (en curso / terminados), **dinero por ganar** (suma de los caballos *en curso*), **dinero ganado** (suma de los *terminados*), barra de proporción y desglose por cliente.
+- **Caballos:** tabla con búsqueda (caballo o cliente, sin distinguir tildes/mayúsculas), filtro En curso/Terminado, ordenación por columnas, paginación (15 por página), ficha completa, alta/edición, marcar como terminado / reabrir y eliminación con confirmación.
 - **Servicios:** catálogo con alta/edición/consulta, activar/desactivar y eliminación segura (bloqueada si algún caballo lo tiene asignado; se ofrece desactivarlo).
 - Precio total calculado automáticamente en céntimos, actualizado al instante, formato `1.234,56 €`.
 - Diseño responsive: en móvil las tablas pasan a tarjetas y los formularios a hoja inferior.
@@ -37,9 +38,13 @@ horses/{horseId}
   totalPrice: int            céntimos = suma de services[].price
   location: string           (0–200)
   registrationDate: "YYYY-MM-DD"
-  status: "active" | "inactive"
+  status: "in_progress" | "finished"        ← en curso (por cobrar) / terminado (ganado)
   createdAt, updatedAt: timestamp (del servidor)
 ```
+
+Los servicios siguen usando `active` / `inactive` (disponibles o no para asignar).
+
+> **Migración:** antes los caballos usaban `active`/`inactive`. La app lee los valores antiguos como *en curso*/*terminado*, y `node --env-file=.env.e2e scripts/migrate-horse-status.mjs` los reescribe en Firestore (ya ejecutado el 30/10/2026).
 
 ### Política de precios y relaciones
 
@@ -109,7 +114,7 @@ npm run preview    # sirve dist/ en http://localhost:4173/GestionCaballos/
 2. Haz push a `main`. El workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) instala dependencias, pasa los tests, compila y publica `dist/`.
 3. La app queda en `https://javiercillo11.github.io/GestionCaballos/`.
 
-**Rutas:** se usa `HashRouter` (`/#/caballos`, `/#/servicios`), así que recargar cualquier página funciona en GitHub Pages sin configuración de servidor. Además se publica `404.html` como copia de `index.html` por si se accede a una ruta inexistente.
+**Rutas:** se usa `HashRouter` (`/#/resumen`, `/#/caballos`, `/#/servicios`), así que recargar cualquier página funciona en GitHub Pages sin configuración de servidor. Además se publica `404.html` como copia de `index.html` por si se accede a una ruta inexistente.
 
 ## Pruebas contra Firebase real
 
@@ -132,11 +137,11 @@ Los scripts crean datos con prefijo `E2E-<timestamp>`/`ZZ rules` y los eliminan 
 
 ```
 src/
-  lib/          firebase (init y config), tipos, importes (money.ts), fechas, errores, hooks de tabla
+  lib/          firebase (init y config), tipos, importes (money.ts), resumen (stats.ts), estados, fechas, errores, hooks de tabla
   services/     acceso a Firestore/Auth: auth.ts, horses.ts, catalog.ts
   context/      AuthContext (sesión + autorización), DataContext (suscripciones en tiempo real)
   components/   Layout, Modal, ConfirmDialog, Toast, componentes de UI
-  pages/        Login, Caballos (tabla, formulario, ficha), Servicios (tabla, formulario)
+  pages/        Login, Resumen, Caballos (tabla, formulario, ficha), Servicios (tabla, formulario)
   styles/       tokens.css (paleta y medidas), base.css
 tests/          tests unitarios (Vitest)
 e2e/            pruebas contra Firebase real (reglas + Playwright)

@@ -39,7 +39,7 @@ const db = getFirestore(app);
 const now = serverTimestamp();
 const validService = { name: 'ZZ rules test', description: '', price: 1234, status: 'active', createdAt: now, updatedAt: now };
 const validHorse = (svcId) => ({
-  name: 'ZZ rules horse', clientName: 'Test', location: '', registrationDate: '2026-10-30', status: 'active',
+  name: 'ZZ rules horse', clientName: 'Test', location: '', registrationDate: '2026-10-30', status: 'in_progress',
   services: [{ serviceId: svcId, name: 'ZZ rules test', price: 1234 }], serviceIds: [svcId], totalPrice: 1234,
   createdAt: now, updatedAt: now,
 });
@@ -84,7 +84,8 @@ await expectResult('horse con total incoherente', false, () => addDoc(collection
 await expectResult('horse sin servicios con total > 0', false, () => addDoc(collection(db, 'horses'), { ...validHorse(svcId), services: [], serviceIds: [], totalPrice: 500 }));
 await expectResult('horse con fecha inválida', false, () => addDoc(collection(db, 'horses'), { ...validHorse(svcId), registrationDate: '30/10/2026' }));
 await expectResult('modificar createdAt de horse', false, () => updateDoc(doc(db, 'horses', horseId), { createdAt: Timestamp.fromDate(new Date(2000, 0, 1)), updatedAt: now }));
-await expectResult('actualizar estado de horse', true, () => updateDoc(doc(db, 'horses', horseId), { status: 'inactive', updatedAt: now }));
+await expectResult('horse con estado antiguo (active)', false, () => addDoc(collection(db, 'horses'), { ...validHorse(svcId), status: 'active' }));
+await expectResult('marcar horse como terminado', true, () => updateDoc(doc(db, 'horses', horseId), { status: 'finished', updatedAt: now }));
 await expectResult('escribir en colección no prevista', false, () => addDoc(collection(db, 'other'), { a: 1 }));
 await expectResult('auto-añadirse a allowedUsers', false, () => setDoc(doc(db, 'allowedUsers', auth.currentUser.uid), { email: E2E_EMAIL }));
 await expectResult('borrar horse', true, () => deleteDoc(doc(db, 'horses', horseId)));

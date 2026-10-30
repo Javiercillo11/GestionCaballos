@@ -4,6 +4,7 @@ import { Spinner } from './components/ui';
 import { useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { AccessIssuePage } from './pages/AccessIssuePage';
+import { DashboardPage } from './pages/DashboardPage';
 import { HorsesPage } from './pages/HorsesPage';
 import { LoginPage } from './pages/LoginPage';
 import { ServicesPage } from './pages/ServicesPage';
@@ -28,9 +29,10 @@ export function App() {
       <HashRouter>
         <Routes>
           <Route element={<Layout />}>
+            <Route path="/resumen" element={<DashboardPage />} />
             <Route path="/caballos" element={<HorsesPage />} />
             <Route path="/servicios" element={<ServicesPage />} />
-            <Route path="*" element={<Navigate to="/caballos" replace />} />
+            <Route path="*" element={<Navigate to="/resumen" replace />} />
           </Route>
         </Routes>
       </HashRouter>

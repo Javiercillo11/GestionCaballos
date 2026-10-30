@@ -1,5 +1,5 @@
 import { Modal } from '../components/Modal';
-import { StatusBadge } from '../components/ui';
+import { HorseStatusBadge } from '../components/ui';
 import { formatDate } from '../lib/dates';
 import { formatCents } from '../lib/money';
 import type { Horse } from '../lib/types';
@@ -33,7 +33,7 @@ export function HorseDetail({ horse, onClose, onEdit }: { horse: Horse; onClose:
         <dd>{formatDate(horse.registrationDate)}</dd>
         <dt>Estado</dt>
         <dd>
-          <StatusBadge status={horse.status} />
+          <HorseStatusBadge status={horse.status} />
         </dd>
       </dl>
       <h3 className="section-title">Servicios contratados</h3>

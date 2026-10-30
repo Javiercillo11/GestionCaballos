@@ -17,6 +17,10 @@ const tag = `E2E-${Date.now()}`;
 const S1 = `${tag} Pupilaje`, S2 = `${tag} Herraje`, S3 = `${tag} Doma`;
 const H1 = `${tag} Tornado`;
 const euro = (s) => s.replace(/\s/g, ' ');
+const toCents = (txt) => {
+  const m = /([\d.]+),(\d{2})/.exec(txt.replace(/\s/g, ''));
+  return Number(m[1].replace(/\./g, '')) * 100 + Number(m[2]);
+};
 
 const results = [];
 async function step(name, fn) {
@@ -44,6 +48,16 @@ async function login(p, email, password) {
   await p.getByLabel('Correo electrónico').fill(email);
   await p.getByLabel('Contraseña').fill(password);
   await p.getByRole('button', { name: 'Iniciar sesión' }).click();
+}
+
+async function readDashboard() {
+  await page.getByRole('link', { name: 'Resumen' }).click();
+  await page.getByTestId('kpi-total').waitFor();
+  return {
+    total: Number((await page.getByTestId('kpi-total').locator('.kpi__value').innerText()).trim()),
+    pending: toCents(await page.getByTestId('kpi-pending').locator('.kpi__value').innerText()),
+    earned: toCents(await page.getByTestId('kpi-earned').locator('.kpi__value').innerText()),
+  };
 }
 
 async function createService(name, price) {
@@ -99,6 +113,11 @@ try {
     await serviceRow(S3).getByText('Descripción editada').waitFor();
   });
 
+  let base;
+  await step('Resumen: lectura inicial de totales', async () => {
+    base = await readDashboard();
+  });
+
   await step('Validación: caballo sin campos obligatorios no se guarda', async () => {
     await page.getByRole('link', { name: 'Caballos' }).click();
     await page.getByRole('button', { name: '+ Nuevo caballo' }).first().click();
@@ -142,6 +161,12 @@ try {
     assert.match(await row.innerText(), /Box 7 - Pista norte/);
   });
 
+  await step('Resumen: un caballo en curso suma a «Dinero por ganar»', async () => {
+    const d = await readDashboard();
+    assert.deepEqual(d, { total: base.total + 1, pending: base.pending + 41565, earned: base.earned });
+    await page.getByRole('link', { name: 'Caballos' }).click();
+  });
+
   await step('Consultar ficha completa del caballo', async () => {
     await horseRow(H1).getByRole('button', { name: 'Ver' }).click();
     const dlg = page.getByRole('dialog');
@@ -161,18 +186,31 @@ try {
     await search.fill(tag);
   });
 
-  await step('Desactivar caballo y filtrar por estado', async () => {
-    await horseRow(H1).getByRole('button', { name: 'Desactivar' }).click();
-    await toast(`«${H1}» ahora está inactivo.`).waitFor();
-    await horseRow(H1).getByText('Inactivo').waitFor();
-    await page.getByRole('button', { name: /^Activos/ }).click();
+  await step('Marcar caballo como terminado y filtrar por estado', async () => {
+    await horseRow(H1).getByText('En curso').waitFor();
+    await horseRow(H1).getByRole('button', { name: 'Marcar terminado' }).click();
+    await toast(`«${H1}» marcado como terminado.`).waitFor();
+    await horseRow(H1).getByText('Terminado').waitFor();
+    await page.getByRole('button', { name: /^En curso \(/ }).click();
     await page.getByText('Sin resultados').waitFor();
-    await page.getByRole('button', { name: /^Inactivos/ }).click();
+    await page.getByRole('button', { name: /^Terminados \(/ }).click();
     await horseRow(H1).waitFor();
-    await horseRow(H1).getByRole('button', { name: 'Activar' }).click();
-    await toast(`«${H1}» ahora está activo.`).waitFor();
     await page.getByRole('button', { name: /^Todos/ }).click();
-    await horseRow(H1).getByText('Activo').waitFor();
+  });
+
+  await step('Resumen: al terminar, el importe pasa de «por ganar» a «ganado»', async () => {
+    const d = await readDashboard();
+    assert.deepEqual(d, { total: base.total + 1, pending: base.pending, earned: base.earned + 41565 });
+    const row = page.locator('tbody tr').filter({ hasText: `${tag} Cliente Ana` });
+    assert.match(euro(await row.innerText()), /0,00 €[\s\S]*415,65 €[\s\S]*415,65 €/);
+    await page.getByRole('link', { name: 'Caballos' }).click();
+    await page.getByPlaceholder('Buscar por caballo o cliente…').fill(tag);
+  });
+
+  await step('Reabrir caballo terminado lo devuelve a «En curso»', async () => {
+    await horseRow(H1).getByRole('button', { name: 'Reabrir' }).click();
+    await toast(`«${H1}» marcado como en curso.`).waitFor();
+    await horseRow(H1).getByText('En curso').waitFor();
   });
 
   await step('Cambiar precio del catálogo NO altera el importe histórico del caballo', async () => {
@@ -240,6 +278,10 @@ try {
     });
     assert.ok(clipped <= 1, `tabla desborda ${clipped}px`);
     await page.screenshot({ path: `${OUT}/desktop-caballos.png`, fullPage: true });
+    await readDashboard();
+    await page.screenshot({ path: `${OUT}/desktop-resumen.png`, fullPage: true });
+    await page.getByRole('link', { name: 'Caballos' }).click();
+    await page.getByPlaceholder('Buscar por caballo o cliente…').fill(tag);
   });
 
   await step('Vista móvil (390×844): tabla en tarjetas y navegación visible', async () => {
@@ -250,6 +292,13 @@ try {
     await mp.getByRole('heading', { name: 'Caballos' }).waitFor();
     await mp.getByPlaceholder('Buscar por caballo o cliente…').fill(tag);
     await mp.locator('tbody tr').filter({ hasText: H1 }).waitFor();
+    await mp.getByRole('link', { name: 'Resumen' }).click();
+    await mp.getByTestId('kpi-total').waitFor();
+    const dashOverflow = await mp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    assert.ok(dashOverflow <= 1, `resumen con scroll horizontal de ${dashOverflow}px`);
+    await mp.screenshot({ path: `${OUT}/mobile-resumen.png`, fullPage: true });
+    await mp.getByRole('link', { name: 'Caballos' }).click();
+    await mp.getByPlaceholder('Buscar por caballo o cliente…').fill(tag);
     const overflow = await mp.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     assert.ok(overflow <= 1, `scroll horizontal de ${overflow}px`);
     assert.equal(await mp.locator('thead').isVisible(), false);
@@ -280,6 +329,8 @@ try {
   });
 
   await step('Cerrar sesión vuelve al login y bloquea la gestión', async () => {
+    const after = await readDashboard();
+    assert.deepEqual(after, base, 'el resumen vuelve a los valores iniciales tras limpiar');
     await page.getByRole('button', { name: 'Cerrar sesión' }).click();
     await page.getByRole('heading', { name: 'Iniciar sesión' }).waitFor();
     await page.goto(`${URL}#/servicios`);

@@ -1,6 +1,10 @@
 import type { Timestamp } from 'firebase/firestore';
 
+/** Estado de un servicio del catálogo. */
 export type Status = 'active' | 'inactive';
+
+/** Estado de un caballo: trabajo en curso (pendiente de cobro) o terminado (ganado). */
+export type HorseStatus = 'in_progress' | 'finished';
 
 /** Importe en céntimos de euro (entero). */
 export type Cents = number;
@@ -37,7 +41,7 @@ export interface Horse {
   location: string;
   /** Fecha de alta en formato YYYY-MM-DD. */
   registrationDate: string;
-  status: Status;
+  status: HorseStatus;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
 }

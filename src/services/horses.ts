@@ -10,7 +10,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { sumCents } from '../lib/money';
-import type { Horse, HorseInput, Status } from '../lib/types';
+import { normalizeHorseStatus } from '../lib/horseStatus';
+import type { Horse, HorseInput, HorseStatus } from '../lib/types';
 
 const horsesCol = collection(db, 'horses');
 
@@ -24,7 +25,13 @@ export function subscribeHorses(
       onData(
         snap.docs.map((d) => {
           const data = d.data({ serverTimestamps: 'estimate' }) as Omit<Horse, 'id'>;
-          return { id: d.id, ...data, services: data.services ?? [], serviceIds: data.serviceIds ?? [] };
+          return {
+            id: d.id,
+            ...data,
+            services: data.services ?? [],
+            serviceIds: data.serviceIds ?? [],
+            status: normalizeHorseStatus(data.status),
+          };
         }),
       ),
     onError,
@@ -59,7 +66,7 @@ export async function updateHorse(id: string, input: HorseInput) {
   await updateDoc(doc(db, 'horses', id), { ...toDocData(input), updatedAt: serverTimestamp() });
 }
 
-export async function setHorseStatus(id: string, status: Status) {
+export async function setHorseStatus(id: string, status: HorseStatus) {
   await updateDoc(doc(db, 'horses', id), { status, updatedAt: serverTimestamp() });
 }
 

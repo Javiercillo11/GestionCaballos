@@ -34,6 +34,10 @@ export function Layout() {
           </div>
         </div>
         <nav className="nav" aria-label="Secciones">
+          <NavLink to="/resumen" className="nav__link">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2" /></svg>
+            Resumen
+          </NavLink>
           <NavLink to="/caballos" className="nav__link">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-6c0-4 2.6-6.7 6.3-7.6L14 4l1 2.8c1.9.9 3.2 2.6 3.2 4.7L17.5 14l-3-1-2.4 2V20" /></svg>
             Caballos

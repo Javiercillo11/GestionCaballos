@@ -5,7 +5,8 @@ import { useData } from '../context/DataContext';
 import { todayISO, isValidISODate } from '../lib/dates';
 import { assertOnline, errorMessage } from '../lib/errors';
 import { buildAssignedServices, formatCents, sumCents } from '../lib/money';
-import type { Horse, Status } from '../lib/types';
+import { HORSE_STATUSES, HORSE_STATUS_LABEL } from '../lib/horseStatus';
+import type { Horse, HorseStatus } from '../lib/types';
 import { createHorse, updateHorse } from '../services/horses';
 
 interface Props {
@@ -22,7 +23,7 @@ export function HorseForm({ horse, onClose }: Props) {
   const [clientName, setClientName] = useState(horse?.clientName ?? '');
   const [location, setLocation] = useState(horse?.location ?? '');
   const [registrationDate, setRegistrationDate] = useState(horse?.registrationDate ?? todayISO());
-  const [status, setStatus] = useState<Status>(horse?.status ?? 'active');
+  const [status, setStatus] = useState<HorseStatus>(horse?.status ?? 'in_progress');
   const [selectedIds, setSelectedIds] = useState<string[]>(horse?.serviceIds ?? []);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
@@ -154,10 +155,10 @@ export function HorseForm({ horse, onClose }: Props) {
         <div className="field">
           <span className="field__label" id="h-status-label">Estado</span>
           <div className="segmented" role="radiogroup" aria-labelledby="h-status-label">
-            {(['active', 'inactive'] as const).map((s) => (
+            {HORSE_STATUSES.map((s) => (
               <label key={s} className={`segmented__opt ${status === s ? 'is-on' : ''}`}>
                 <input type="radio" name="status" value={s} checked={status === s} onChange={() => setStatus(s)} />
-                {s === 'active' ? 'Activo' : 'Inactivo'}
+                {HORSE_STATUS_LABEL[s]}
               </label>
             ))}
           </div>

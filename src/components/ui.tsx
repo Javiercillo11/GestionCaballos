@@ -1,12 +1,22 @@
 import type { ReactNode } from 'react';
 
-import type { Status } from '../lib/types';
+import { HORSE_STATUS_LABEL } from '../lib/horseStatus';
+import type { HorseStatus, Status } from '../lib/types';
 
 export function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`badge badge--${status}`}>
       <span className="badge__dot" aria-hidden="true" />
       {status === 'active' ? 'Activo' : 'Inactivo'}
+    </span>
+  );
+}
+
+export function HorseStatusBadge({ status }: { status: HorseStatus }) {
+  return (
+    <span className={`badge badge--${status === 'in_progress' ? 'progress' : 'finished'}`}>
+      <span className="badge__dot" aria-hidden="true" />
+      {HORSE_STATUS_LABEL[status]}
     </span>
   );
 }
@@ -120,6 +130,8 @@ const ICONS = {
   view: <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />,
   edit: <path d="M4 20h4L19 9l-4-4L4 16v4zM14 6l4 4" />,
   power: <path d="M12 3v8M6.3 6.3a8 8 0 1 0 11.4 0" />,
+  check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
+  reopen: <path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v4h4" />,
   trash: <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" />,
 };
 

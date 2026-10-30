@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/Toast';
-import { EmptyState, ErrorState, IconButton, Pagination, SortHeader, Spinner, StatusBadge } from '../components/ui';
+import { EmptyState, ErrorState, HorseStatusBadge, IconButton, Pagination, SortHeader, Spinner } from '../components/ui';
 import { useData } from '../context/DataContext';
 import { formatDate } from '../lib/dates';
 import { assertOnline, errorMessage } from '../lib/errors';
 import { formatCents } from '../lib/money';
-import type { Horse, Status } from '../lib/types';
+import type { Horse, HorseStatus } from '../lib/types';
 import { normalize, PAGE_SIZE, useTable } from '../lib/useTable';
 import { deleteHorse, setHorseStatus } from '../services/horses';
 import { HorseDetail } from './HorseDetail';
 import { HorseForm } from './HorseForm';
 
 type SortKey = 'name' | 'clientName' | 'totalPrice' | 'location' | 'registrationDate' | 'status';
-type Filter = 'all' | Status;
+type Filter = 'all' | HorseStatus;
 
 const sortValue = (h: Horse, key: SortKey): string | number => h[key];
 
@@ -28,8 +28,8 @@ export function HorsesPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const counts = useMemo(() => {
-    const active = horses.items.filter((h) => h.status === 'active').length;
-    return { all: horses.items.length, active, inactive: horses.items.length - active };
+    const inProgress = horses.items.filter((h) => h.status === 'in_progress').length;
+    return { all: horses.items.length, inProgress, finished: horses.items.length - inProgress };
   }, [horses.items]);
 
   const filtered = useMemo(() => {
@@ -47,12 +47,12 @@ export function HorsesPage() {
 
   async function toggleStatus(h: Horse) {
     if (togglingId) return;
-    const next: Status = h.status === 'active' ? 'inactive' : 'active';
+    const next: HorseStatus = h.status === 'in_progress' ? 'finished' : 'in_progress';
     setTogglingId(h.id);
     try {
       assertOnline();
       await setHorseStatus(h.id, next);
-      toast('success', `«${h.name}» ahora está ${next === 'active' ? 'activo' : 'inactivo'}.`);
+      toast('success', `«${h.name}» marcado como ${next === 'finished' ? 'terminado' : 'en curso'}.`);
     } catch (err) {
       toast('error', errorMessage(err, 'No se ha podido cambiar el estado.'));
     } finally {
@@ -83,7 +83,7 @@ export function HorsesPage() {
         <div>
           <h1>Caballos</h1>
           <p className="page__subtitle">
-            {counts.all} registrados · {counts.active} activos · {counts.inactive} inactivos
+            {counts.all} registrados · {counts.inProgress} en curso · {counts.finished} terminados
           </p>
         </div>
         <button type="button" className="btn btn--primary" onClick={() => setEditing('new')}>
@@ -107,8 +107,8 @@ export function HorsesPage() {
           {(
             [
               ['all', `Todos (${counts.all})`],
-              ['active', `Activos (${counts.active})`],
-              ['inactive', `Inactivos (${counts.inactive})`],
+              ['in_progress', `En curso (${counts.inProgress})`],
+              ['finished', `Terminados (${counts.finished})`],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -161,7 +161,7 @@ export function HorsesPage() {
                 </thead>
                 <tbody>
                   {table.pageRows.map((h) => (
-                    <tr key={h.id} className={h.status === 'inactive' ? 'is-inactive' : undefined}>
+                    <tr key={h.id} className={h.status === 'finished' ? 'is-finished' : undefined}>
                       <td data-label="Caballo" className="cell-strong">
                         <button type="button" className="link-btn link-btn--inline" onClick={() => setViewingId(h.id)}>
                           {h.name}
@@ -187,16 +187,16 @@ export function HorsesPage() {
                       <td data-label="Ubicación">{h.location || <span className="muted">—</span>}</td>
                       <td data-label="Fecha de alta">{formatDate(h.registrationDate)}</td>
                       <td data-label="Estado">
-                        <StatusBadge status={h.status} />
+                        <HorseStatusBadge status={h.status} />
                       </td>
                       <td data-label="Acciones" className="actions-col">
                         <div className="row-actions">
                           <IconButton icon="view" label="Ver" onClick={() => setViewingId(h.id)} />
                           <IconButton icon="edit" label="Editar" onClick={() => setEditing(h)} />
                           <IconButton
-                            icon="power"
-                            label={h.status === 'active' ? 'Desactivar' : 'Activar'}
-                            variant={h.status === 'active' ? 'on' : undefined}
+                            icon={h.status === 'in_progress' ? 'check' : 'reopen'}
+                            label={h.status === 'in_progress' ? 'Marcar terminado' : 'Reabrir'}
+                            variant={h.status === 'in_progress' ? 'on' : undefined}
                             onClick={() => toggleStatus(h)}
                             disabled={togglingId === h.id}
                           />
